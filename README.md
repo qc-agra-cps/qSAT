@@ -220,6 +220,14 @@ Literals within a `@`-delimited group are ANDed (one product).
 
 ---
 
+# License
+
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
+
+See the [LICENSE](LICENSE) file for the full license text.
+
+---
+
 # Authors
 
 - Abhoy Kole
@@ -231,9 +239,3 @@ Deutsches Forschungszentrum für Künstliche Intelligenz (DFKI)
 Cyber-Physical Systems Department
 
 ---
-
-# License
-
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
-
-See the `LICENSE` file for the full license text.
