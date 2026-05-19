@@ -15,11 +15,14 @@ The framework supports:
 If you use qSAT in academic work, please cite:
 
 ```bibtex
-@article{?,
+@misc{assaad2026performance,
   title={Performance Gains in Quantum SAT Solvers Using ESOP Encoding},
   author={Assaad, Majd and Kole, Abhoy and Drechsler, Rolf},
-  journal={?},
-  year={2025}
+  year={2026},
+  eprint={2605.16202},
+  archivePrefix={arXiv},
+  primaryClass={quant-ph},
+  url={https://arxiv.org/abs/2605.16202}
 }
 ```
 
