@@ -146,6 +146,7 @@ class Monomial {
      * @brief Read-only access to the literals forming this monomial.
      */
     inline const LiteralSet& getLiterals() const { return literals; }
+    inline LiteralSet& getLiterals() { return literals; }
 };
 
 }  // namespace qSAT

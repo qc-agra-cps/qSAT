@@ -40,7 +40,10 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",
             f"-DQSAT_VERSION_INFO={version}",
+            "-DBUILD_TESTS=OFF",
             "-DQSAT_BUILD_BINDINGS=ON",
+            "-DQCORE_LIBRARY_TYPE=STATIC",
+            "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON",
         ]
         build_args = []
 
@@ -88,7 +91,12 @@ class CMakeBuild(build_ext):
 setup(
     name="qsat",
     use_scm_version=True,
+    install_requires=[
+        'qcore @ git+https://github.com/qc-agra-cps/qcore'
+    ],
     ext_modules=[CMakeExtension("pyqsat")],
     cmdclass={"build_ext": CMakeBuild},
     setup_requires=["setuptools_scm"],
+    packages=['qcore.qsat'],
+    package_dir={'': 'python'},
 )

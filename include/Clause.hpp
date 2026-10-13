@@ -60,6 +60,8 @@ class Clause {
     /** @brief Default constructor. Initializes an empty clause. */
     Clause() = default;
 
+    Clause(Clause const &o);
+
     /**
      * @brief Constructs a clause from a given set of expressions.
      * @param t_expressions The set of expressions forming the clause.
@@ -177,6 +179,15 @@ class Clause {
     std::string toString();
 
     /**
+     * @brief Returns wether two clauses share at least one variable (ignoring negation)
+     */
+    bool shares_variable_with(Clause const &other) const;
+    std::size_t getNumLiterals() const;
+    MonomialPtr const &getMonomial() const;
+    MonomialPtr &getMonomial();
+    bool isSingleMonomial() const;
+
+    /**
      * @brief Stream insertion operator for Clause.
      * @param os Output stream.
      * @param clause Clause instance to print.
@@ -193,6 +204,10 @@ class Clause {
      */
     // qcore::QCircuit toQCircuit(ParameterSet &parameters, const int &offset = 0);
 
+    struct Attributes {
+        bool clique_start = false;
+    };
+
    private:
     /** @brief Index of the clause in the formula (for reference or ordering). */
     int index = -1;
@@ -206,12 +221,18 @@ class Clause {
     /** @brief Collection of expressions (literals or monomials) forming this clause. */
     ExpressionSet expressions;
 
+    Attributes attributes;
+
     /**
      * @brief Deep clones an expression (either a LiteralPtr or MonomialPtr).
      * @param expr The expression to clone.
      * @return A new expression with a deep copy of the underlying object.
      */
     static Expression cloneExpression(const Expression& expr);
+
+public:
+    Attributes const &getAttributes() const {return attributes;}
+    Attributes &getAttributes() {return attributes;}
 };
 
 }  // namespace qSAT

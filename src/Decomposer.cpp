@@ -109,8 +109,7 @@ qcore::QCircuit decomposeToCliffordT(const qcore::QCircuit& circuit) {
             cleanAncilla.insert(cleanAncilla.end(), ancillaPool.begin(), ancillaPool.begin() + cleanCount);
             dirtyAncilla.insert(dirtyAncilla.end(), ancillaPool.begin() + cleanCount, ancillaPool.begin() + cleanCount + dirtyCount);
 
-            decomposed.addQCircuit(
-                qcore::decompose_MCT_Clifford_T(gate.getControls(), gate.getTargets()[0], dirtyAncilla, cleanAncilla));
+			decomposed.addQCircuit(qcore::decompose_resolve_Toffoli(qcore::DecompositionConfiguration::ReduceTDepth, gate.getControls(), gate.getTargets()[0], cleanAncilla, dirtyAncilla));
         } else {
             decomposed.addQGate(gate);
         }

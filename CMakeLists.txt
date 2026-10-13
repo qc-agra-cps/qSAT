@@ -36,8 +36,12 @@ endmacro()
 CHECK_SUBMODULE_PRESENT(qcore)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/qcore extern/qcore)
 
+CHECK_SUBMODULE_PRESENT(clipperp)
+add_subdirectory(${PROJECT_SOURCE_DIR}/extern/clipperp extern/clipperp)
+
 # add main library code
 add_subdirectory(src)
+#add_subdirectory(test)
 
 # add Python binding code
 if(QSAT_BUILD_BINDINGS)

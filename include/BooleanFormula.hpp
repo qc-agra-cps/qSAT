@@ -40,6 +40,7 @@
 #include "Literal.hpp"
 #include "Monomial.hpp"
 #include <QCircuit.hpp>
+#include <decompose/Clifford_T.hpp>
 
 namespace qSAT {
 
@@ -71,6 +72,9 @@ class BooleanFormula {
     ClauseSet clauses;        ///< Collection of clauses forming the formula.
 
    public:
+     BooleanFormula() = default;
+     BooleanFormula(BooleanFormula const &o);
+
     /**
      * @brief Parses a Boolean formula from an input stream.
      * @details
@@ -113,10 +117,17 @@ class BooleanFormula {
 
     /**
      * @brief Converts the formula into a quantum circuit representation.
+     * @param config The decomposition configuration
      * @param m_type The type of miter to construct (default: U_TYPE).
      * @return QCircuit representing the Boolean formula.
      */
-    qcore::QCircuit toQCircuit(MiterType m_type = MiterType::U_TYPE) const;
+    qcore::QCircuit toQCircuit(qcore::DecompositionConfiguration config, MiterType m_type = MiterType::U_TYPE) const;
+
+    inline ClauseSet const &getClauses() const { return this->clauses; }
+    inline void setClauses(ClauseSet &&clauses) { this->clauses = std::move(clauses); }
+
+    inline ParameterSet const &getParameters() const { return this->parameters; }
+    inline void setParameters(ParameterSet &&parameters) { this->parameters = std::move(parameters); }
 };
 
 }  // namespace qSAT

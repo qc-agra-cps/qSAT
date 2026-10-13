@@ -56,5 +56,13 @@ inline std::ostream& operator<<(std::ostream& os, const BooleanFormula& formula)
     return os << formula.toString();
 }
 
-
-};
+// Required for pybind11
+BooleanFormula::BooleanFormula(BooleanFormula const &o) {
+    auto parameters = o.getParameters();
+    setParameters(std::move(parameters));
+    ClauseSet clauses;
+    std::transform(o.getClauses().begin(), o.getClauses().end(), std::back_inserter(clauses),
+                   [](auto const &c) { return std::make_unique<Clause>(*c); });
+    setClauses(std::move(clauses));
+}
+}; // namespace qSAT

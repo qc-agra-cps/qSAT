@@ -33,13 +33,19 @@
 
 #include "Clause.hpp"
 
+#include <algorithm>
+#include <functional>
 #include <sstream>
 #include <string>
+#include <set>
+#include <optional>
 
 #include "Literal.hpp"
 #include "Monomial.hpp"
 
 namespace qSAT {
+
+Clause::Clause(Clause const &o) : Clause(o.expressions, o.getFormat(), o.complemented, o.index) {}
 
 /**
  * @brief Constructs a clause by deeply copying a given set of expressions.
@@ -131,6 +137,9 @@ Expression Clause::cloneExpression(const Expression& expr) {
 std::string Clause::toString() {
     std::ostringstream oss;
     oss << "(";
+	if (complemented) {
+	    oss << "1 * ";
+    }
     for (size_t i = 0; i < expressions.size(); ++i) {
         std::visit([&oss](const auto& ptr) {
             if constexpr (std::is_same_v<std::decay_t<decltype(ptr)>, LiteralPtr>) {
@@ -149,6 +158,84 @@ std::string Clause::toString() {
     oss << ")";
     return oss.str();
 }
+
+// Helper function
+std::set<index_t> get_vars(Clause const &c) {
+    std::set<index_t> vars;
+    for (auto const &expr : c.getExpressions()) {
+        std::visit(
+            [&vars](auto const &expr) {
+                using T = std::decay_t<decltype(expr)>;
+                if constexpr (std::is_same_v<T, LiteralPtr>) {
+                    vars.emplace(expr->getIndex());
+                } else {
+                    for (auto const &lit : expr->getLiterals()) {
+                        vars.emplace(lit->getIndex());
+                    }
+                }
+            },
+            expr);
+    }
+    return vars;
+};
+
+/**
+ * @brief Returns wether two clauses share at least one variable (ignoring negation)
+ */
+bool Clause::shares_variable_with(Clause const &other) const {
+    auto vars_a = get_vars(*this);
+    auto vars_b = get_vars(other);
+    for (auto a : vars_a) {
+        for (auto b : vars_b) {
+            if (a == b)
+                return true;
+        }
+    }
+    return false;
+}
+
+std::size_t Clause::getNumLiterals() const {
+    return get_vars(*this).size();
+}
+
+MonomialPtr &Clause::getMonomial() {
+    std::optional<std::reference_wrapper<MonomialPtr>> result = {};
+    for (auto &expr : expressions) {
+        if (std::holds_alternative<MonomialPtr>(expr)) {
+		  if (result && (*result).get()->getLiterals().size() > 1) {
+                throw std::logic_error{"Clause contains more than one monomial"};
+            }
+            result = std::get<MonomialPtr>(expr);
+        }
+    }
+    if (!result) {
+        throw std::logic_error{"Clause does not contain a monomial"};
+    }
+    return *result;
+}
+
+MonomialPtr const &Clause::getMonomial() const {
+    std::optional<std::reference_wrapper<MonomialPtr const>> result = {};
+    for (auto const &expr : expressions) {
+        if (std::holds_alternative<MonomialPtr>(expr)) {
+		  if (result && (*result).get()->getLiterals().size() > 1) {
+                throw std::logic_error{"Clause contains more than one monomial"};
+            }
+            result = std::get<MonomialPtr>(expr);
+        }
+    }
+    if (!result) {
+        throw std::logic_error{"Clause does not contain a monomial"};
+    }
+    return *result;
+}
+
+bool Clause::isSingleMonomial() const {
+    if (expressions.size() > 1)
+	  return false;
+    return true;
+}
+
 /**
  * @brief Outputs a textual representation of the clause to a stream.
  * @code

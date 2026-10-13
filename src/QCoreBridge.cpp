@@ -62,19 +62,18 @@ using qcore::TargetSet;
 
 struct GateBuilder {
     QCircuit& circuit;
+	const qcore::DecompositionConfiguration &config;
     std::vector<qcore::QGate>* recorder{nullptr};
 
     void normaliseLastGate() {
         auto& gates = circuit.getGates();
         if (!gates.empty() && gates.back()) {
-            gates.back()->setIsClassical(false);
-            gates.back()->setExpression("");
+            gates.back()->setClassical(false);
         }
     }
 
     void addGate(QGate gate) {
-        gate.setIsClassical(false);
-        gate.setExpression("");
+        gate.setClassical(false);
         if (recorder) {
             recorder->push_back(gate);
         }
@@ -95,14 +94,25 @@ struct GateBuilder {
             x(target);
             return;
         }
-        if (controls.size() == 1) {
-            addGate(QGate(GateType::CX, 2, controls, TargetSet{target}));
-        } else if (controls.size() == 2) {
-            addGate(QGate(GateType::CCX, 3, controls, TargetSet{target}));
-        } else {
-            const auto gateSize = static_cast<qcore::gsize_t>(controls.size() + 1);
-            addGate(QGate(GateType::MCX, gateSize, controls, TargetSet{target}));
-        }
+
+		qcore::QubitSet dirty_ancilla;
+        std::copy_if(circuit.getQubits().begin(), circuit.getQubits().end(), std::back_inserter(dirty_ancilla),
+                     [controls, target](qcore::Qubit q) {
+                         return q != target &&
+                                std::find(controls.begin(), controls.end(), q) == controls.end();
+					 });
+		auto decomposition = qcore::decompose_resolve_Toffoli(config, controls, target, {}, dirty_ancilla);
+        for (auto const &gate : decomposition.getGates()) {
+		  addGate(*gate);
+		}
+        // if (controls.size() == 1) {
+        //     addGate(QGate(GateType::CX, 2, controls, TargetSet{target}));
+        // } else if (controls.size() == 2) {
+        //     addGate(QGate(GateType::CCX, 3, controls, TargetSet{target}));
+        // } else {
+        //     const auto gateSize = static_cast<qcore::gsize_t>(controls.size() + 1);
+        //     addGate(QGate(GateType::MCX, gateSize, controls, TargetSet{target}));
+        // }
     }
 };
 
@@ -253,7 +263,7 @@ void emitEcnfClause(const Clause& clause,
 
 }  // namespace
 
-QCircuit BooleanFormula::toQCircuit(MiterType m_type) const {
+QCircuit BooleanFormula::toQCircuit(qcore::DecompositionConfiguration config, MiterType m_type) const {
     const auto inputCount = static_cast<qcore::regsize_t>(parameters.inputCount);
     const auto clauseCount = static_cast<qcore::regsize_t>(clauses.size());
 
@@ -275,7 +285,7 @@ QCircuit BooleanFormula::toQCircuit(MiterType m_type) const {
     QCircuit circuit(static_cast<qcore::regsize_t>(totalQubits), 0);
 
     std::vector<qcore::QGate> computeGates;
-    GateBuilder computeBuilder{circuit, phaseOracle ? &computeGates : nullptr};
+    GateBuilder computeBuilder{circuit, config, phaseOracle ? &computeGates : nullptr};
 
     for (std::size_t i = 0; i < clauses.size(); ++i) {
         if (!clauses[i]) {
@@ -300,12 +310,12 @@ QCircuit BooleanFormula::toQCircuit(MiterType m_type) const {
             controls.push_back(clauseBase + c);
         }
 
-        GateBuilder marker{circuit};
+        GateBuilder marker{circuit, config};
         marker.h(phaseTarget);
         marker.controlledX(controls, phaseTarget);
         marker.h(phaseTarget);
 
-        GateBuilder uncompute{circuit};
+        GateBuilder uncompute{circuit, config};
         for (auto it = computeGates.rbegin(); it != computeGates.rend(); ++it) {
             uncompute.addGate(*it);
         }
@@ -317,7 +327,7 @@ QCircuit BooleanFormula::toQCircuit(MiterType m_type) const {
             controls.push_back(clauseBase + c);
         }
 
-        GateBuilder builder{circuit};
+        GateBuilder builder{circuit, config};
         builder.controlledX(controls, outputQubit);
     }
 

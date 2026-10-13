@@ -11,6 +11,7 @@
 
 #include <GateType.hpp>
 #include <QCircuit.hpp>
+#include <SAQC.hpp>
 
 #include <filesystem>
 #include <sstream>
@@ -32,13 +33,13 @@ namespace {
 qcore::QCircuit buildCircuitFromFile(const std::string& path, MiterType miterType) {
     BooleanFormula formula;
     formula.parseFrom(path);
-    return formula.toQCircuit(miterType);
+    return formula.toQCircuit(qcore::DecompositionConfiguration::ReduceTDepth, miterType);
 }
 
 qcore::QCircuit buildCircuitFromExpression(const std::string& expression, MiterType miterType) {
     BooleanFormula formula;
     formula.parseFromString(expression);
-    return formula.toQCircuit(miterType);
+    return formula.toQCircuit(qcore::DecompositionConfiguration::ReduceTDepth, miterType);
 }
 
 qcore::QCircuit buildCircuitFromQasmFile(const std::string& path) {
@@ -85,6 +86,8 @@ nl::json circuitProperties(qcore::QCircuit& circuit) {
 }  // namespace
 
 PYBIND11_MODULE(pyqsat, m) {
+	py::module_::import("pyqcore");
+
     m.doc() = R"pbdoc(
         Python interface for the qSAT Boolean formula parser and QASM bridge.
         Converts DIMACS/ECNF files or expression strings to OpenQASM using qcore.
@@ -179,6 +182,29 @@ PYBIND11_MODULE(pyqsat, m) {
         },
         py::arg("qasm"),
         "Expand CCX/MCX gates in a QASM string using the qcore Clifford+T decomposition.");
+
+    py::classh<qSAT::BooleanFormula>(m, "BooleanFormula")
+        .def(py::init<>())
+	  .def("parseFrom", py::overload_cast<const std::string&>(&qSAT::BooleanFormula::parseFrom))
+	  .def("parseFromString", &qSAT::BooleanFormula::parseFromString)
+	  .def("toString", &qSAT::BooleanFormula::toString)
+	  .def("toQCircuit", static_cast<qcore::QCircuit(qSAT::BooleanFormula::*)(qcore::DecompositionConfiguration, qSAT::MiterType) const>(&qSAT::BooleanFormula::toQCircuit));
+
+
+	auto saqc = m.def_submodule("saqc");
+
+    py::classh<qSAT::SAQC::OrderedBooleanFormula>(saqc, "OrderedBooleanFormula")
+      .def(py::init<>())
+      .def(py::init<qSAT::BooleanFormula>())
+	  .def("parseFrom", py::overload_cast<const std::string&>(&qSAT::SAQC::OrderedBooleanFormula::parseFrom))
+	  .def("parseFromString", &qSAT::SAQC::OrderedBooleanFormula::parseFromString)
+	  .def("toString", &qSAT::SAQC::OrderedBooleanFormula::toString)
+	  .def("base", &qSAT::SAQC::OrderedBooleanFormula::base);
+
+	saqc.def("reorder_clique", qSAT::SAQC::reorder_clique, py::arg("formula"), py::arg("max_clique_size"), py::arg("max_clause_size"));
+	saqc.def("reduce", qSAT::SAQC::reduce, py::arg("formula"), py::arg("max_new_variables"));
+	saqc.def("build_qaoa_ansatz", qSAT::SAQC::build_qaoa_ansatz, py::arg("config"), py::arg("formula"), py::arg("num_ancilla"), py::arg("num_reps"));
+	saqc.def("assume_ordered", [](qSAT::BooleanFormula const &f) { return qSAT::SAQC::OrderedBooleanFormula(f); });
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

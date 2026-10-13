@@ -45,7 +45,8 @@ set(QSAT_SOURCES
     Monomial.cpp
     Decomposer.cpp
     parser/Parse.cpp
-    QCoreBridge.cpp)
+    QCoreBridge.cpp
+    SAQC.cpp)
 
 add_library(qsat ${QSAT_SOURCES})
 
@@ -57,6 +58,6 @@ target_include_directories(qsat
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Link against qcore from the required submodule
-target_link_libraries(qsat PUBLIC qcore)
+target_link_libraries(qsat PUBLIC qcore clipperplus)
 
 target_compile_features(qsat PUBLIC cxx_std_20)
